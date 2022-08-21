@@ -1,9 +1,11 @@
 import * as Yup from 'yup';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 // form
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
+// firebase
+import { useAuthState } from "react-firebase-hooks/auth";
 // @mui
 import { Link, Stack, IconButton, InputAdornment } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
@@ -11,10 +13,13 @@ import { LoadingButton } from '@mui/lab';
 import Iconify from '../../../components/Iconify';
 import { FormProvider, RHFTextField, RHFCheckbox } from '../../../components/hook-form';
 
+import { auth, logInWithEmailAndPassword } from '../../../firebase';
+
 // ----------------------------------------------------------------------
 
 export default function LoginForm() {
   const navigate = useNavigate();
+  const [user, loading, error] = useAuthState(auth);
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -39,9 +44,19 @@ export default function LoginForm() {
     formState: { isSubmitting },
   } = methods;
 
-  const onSubmit = async () => {
-    navigate('/dashboard', { replace: true });
+  const onSubmit = async (data) => {
+    console.log(data)
+    logInWithEmailAndPassword(data.email, data.password);
+    // navigate('/dashboard', { replace: true });
   };
+
+  useEffect(() => {
+    if (loading) {
+      // trigger loading screen?
+      return;
+    }
+    if (user) navigate("/dashboard");
+  }, [user, loading]);
 
   return (
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>

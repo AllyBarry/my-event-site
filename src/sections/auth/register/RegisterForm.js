@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate } from 'react-router-dom';
 // form
 import { useForm } from 'react-hook-form';
@@ -10,6 +11,12 @@ import { LoadingButton } from '@mui/lab';
 // components
 import Iconify from '../../../components/Iconify';
 import { FormProvider, RHFTextField } from '../../../components/hook-form';
+// firebase
+import {
+  auth,
+  registerWithEmailAndPassword,
+  signInWithGoogle,
+} from "../../../firebase";
 
 // ----------------------------------------------------------------------
 
@@ -17,6 +24,7 @@ export default function RegisterForm() {
   const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [user, loading, error] = useAuthState(auth);
 
   const RegisterSchema = Yup.object().shape({
     firstName: Yup.string().required('First name required'),
@@ -42,9 +50,16 @@ export default function RegisterForm() {
     formState: { isSubmitting },
   } = methods;
 
-  const onSubmit = async () => {
+  const onSubmit = async (data) => {
+    console.log(data);
+    registerWithEmailAndPassword(data.name, data.lastName, data.email, data.password)
     navigate('/dashboard', { replace: true });
   };
+
+  useEffect(() => {
+    if (loading) return;
+    if (user) navigate('/dashboard', { replace: true });
+  }, [user, loading]);
 
   return (
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
