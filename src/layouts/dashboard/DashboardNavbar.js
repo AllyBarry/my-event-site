@@ -2,6 +2,8 @@ import PropTypes from 'prop-types';
 // material
 import { alpha, styled } from '@mui/material/styles';
 import { Box, Stack, AppBar, Toolbar, IconButton } from '@mui/material';
+// firebase
+import { useAuthState } from "react-firebase-hooks/auth";
 // components
 import Iconify from '../../components/Iconify';
 //
@@ -9,6 +11,8 @@ import Searchbar from './Searchbar';
 import AccountPopover from './AccountPopover';
 import LanguagePopover from './LanguagePopover';
 import NotificationsPopover from './NotificationsPopover';
+
+import { auth } from '../../firebase';
 
 // ----------------------------------------------------------------------
 
@@ -41,6 +45,9 @@ DashboardNavbar.propTypes = {
 };
 
 export default function DashboardNavbar({ onOpenSidebar }) {
+  
+  const [user, loading, error] = useAuthState(auth);
+
   return (
     <RootStyle>
       <ToolbarStyle>
@@ -54,7 +61,7 @@ export default function DashboardNavbar({ onOpenSidebar }) {
         <Stack direction="row" alignItems="center" spacing={{ xs: 0.5, sm: 1.5 }}>
           <LanguagePopover />
           <NotificationsPopover />
-          <AccountPopover />
+          <AccountPopover user={user} />
         </Stack>
       </ToolbarStyle>
     </RootStyle>

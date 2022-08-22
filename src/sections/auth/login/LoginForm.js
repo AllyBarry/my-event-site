@@ -55,7 +55,7 @@ export default function LoginForm() {
       // trigger loading screen?
       return;
     }
-    if (user) navigate("/dashboard");
+    if (user) navigate("/dashboard/app");
   }, [user, loading]);
 
   return (

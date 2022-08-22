@@ -2,6 +2,9 @@ import { faker } from '@faker-js/faker';
 // @mui
 import { useTheme } from '@mui/material/styles';
 import { Grid, Container, Typography } from '@mui/material';
+// firebase
+import { useAuthState } from "react-firebase-hooks/auth";
+import { onAuthStateChanged } from "firebase/auth";
 // components
 import Page from '../components/Page';
 import Iconify from '../components/Iconify';
@@ -18,16 +21,33 @@ import {
   AppConversionRates,
 } from '../sections/@dashboard/app';
 
+import { auth } from '../firebase';
+
 // ----------------------------------------------------------------------
 
 export default function DashboardApp() {
   const theme = useTheme();
 
+  const [user, loading, error] = useAuthState(auth);
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // User is signed in, see docs for a list of available properties
+      // https://firebase.google.com/docs/reference/js/firebase.User
+      const uid = user.uid;
+      // ...
+    } else {
+      // User is signed out
+      // ...
+      console.log("No user logged in.")
+    }
+  });
+
   return (
     <Page title="Dashboard">
       <Container maxWidth="xl">
         <Typography variant="h4" sx={{ mb: 5 }}>
-          Hi, Welcome back
+          Hi, Welcome back {user ? user.displayName : "Guest"}
         </Typography>
 
         <Grid container spacing={3}>
