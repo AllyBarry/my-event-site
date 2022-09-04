@@ -1,6 +1,6 @@
 import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 // material
 import {
@@ -24,16 +24,16 @@ import Label from '../components/Label';
 import Scrollbar from '../components/Scrollbar';
 import Iconify from '../components/Iconify';
 import SearchNotFound from '../components/SearchNotFound';
-import { UserListHead, UserListToolbar, UserMoreMenu } from '../sections/@dashboard/user';
-// mock
-import { fetchUsers } from '../api/Users';
+import { TicketListHead, TicketListToolbar, TicketMoreMenu } from '../sections/tickets/ticket';
+import { fetchTickets, addTicket } from '../api/Tickets';
 
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'Name', label: 'Name', alignRight: false },
-  { id: 'Surname', label: 'Surname', alignRight: false },
-  { id: 'Type', label: 'Type', alignRight: false },
+  { id: 'owner', label: 'Owner', alignRight: false },
+  { id: 'type', label: 'Type', alignRight: false },
+  { id: 'status', label: 'Status', alignRight: false },
+  { id: 'price', label: 'Price', alignRight: false },
   { id: '' },
 ];
 
@@ -63,13 +63,13 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return filter(array, (_user) => _user.Name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    return filter(array, (_ticket) => _ticket.OwnerName.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
 }
 
-export default function User() {
-  const [users, setUsers] = useState([]);
+export default function Tickets() {
+  const [tickets, setTickets] = useState([]);
 
   const [page, setPage] = useState(0);
 
@@ -77,7 +77,7 @@ export default function User() {
 
   const [selected, setSelected] = useState([]);
 
-  const [orderBy, setOrderBy] = useState('Name');
+  const [orderBy, setOrderBy] = useState('name');
 
   const [filterName, setFilterName] = useState('');
 
@@ -91,18 +91,18 @@ export default function User() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = users.map((n) => n.Name);
+      const newSelecteds = tickets.map((n) => n.ID);
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (event, Name) => {
-    const selectedIndex = selected.indexOf(Name);
+  const handleClick = (event, ID) => {
+    const selectedIndex = selected.indexOf(ID);
     let newSelected = [];
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, Name);
+      newSelected = newSelected.concat(selected, ID);
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
@@ -126,51 +126,56 @@ export default function User() {
     setFilterName(event.target.value);
   };
 
-  
   useEffect(() => {
-    fetchUsers().then((users) => {
-      setUsers(users || []);
+    fetchTickets().then((tickets) => {
+      setTickets(tickets || []);
     })
   }, [])
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - users.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - tickets.length) : 0;
 
-  const filteredUsers = applySortFilter(users, getComparator(order, orderBy), filterName);
-
-  const isUserNotFound = filteredUsers.length === 0;
+  const filteredTickets = applySortFilter(tickets, getComparator(order, orderBy), filterName);
+  
+  const isUserNotFound = filteredTickets.length === 0;
 
   return (
-    <Page title="User">
+    <Page title="Tickets">
       <Container>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4" gutterBottom>
-            User
+            Tickets
           </Typography>
-          <Button variant="contained" component={RouterLink} to="#" startIcon={<Iconify icon="eva:plus-fill" />}>
+          
+          <Button variant="contained" onClick={()=>addTicket("Free", 50)} startIcon={<Iconify icon="eva:plus-fill" />}>
+          {/* <Button variant="contained" component={RouterLink} to="#" startIcon={<Iconify icon="eva:plus-fill" />}> */}
             New User
           </Button>
         </Stack>
 
         <Card>
-          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
+          <TicketListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
 
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
               <Table>
-                <UserListHead
+                <TicketListHead
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={users.length}
+                  rowCount={tickets.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
                 />
                 <TableBody>
-                  {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { Tickets, Name, DisplayName, Surname, UserType, ID } = row;
-                    const isItemSelected = selected.indexOf(Name) !== -1;
-
+                  {filteredTickets.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                    const { ID, Owner, Price, Status, Type, OwnerName } = row;
+                    const isItemSelected = selected.indexOf(ID) !== -1;
+                    // ID: "WPNSwyu6swAP9E4pGmKu"
+                    // Owner: ""
+                    // Price: 50
+                    // Status: "Available"
+                    // Type: "Free"
                     return (
                       <TableRow
                         hover
@@ -181,22 +186,26 @@ export default function User() {
                         aria-checked={isItemSelected}
                       >
                         <TableCell padding="checkbox">
-                          <Checkbox checked={isItemSelected} onChange={(event) => handleClick(event, Name)} />
+                          <Checkbox checked={isItemSelected} onChange={(event) => handleClick(event, ID)} />
                         </TableCell>
-                        {/* <TableCell component="th" scope="row" padding="none">
+                        <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={Name} src={avatarUrl} />
+                            {/* <Avatar alt={name} src={avatarUrl} /> */}
                             <Typography variant="subtitle2" noWrap>
-                              {Name}
+                              {OwnerName}
                             </Typography>
                           </Stack>
-                        </TableCell> */}
-                        <TableCell align="left">{Name}</TableCell>
-                        <TableCell align="left">{Surname}</TableCell>
-                        <TableCell align="left">{UserType}</TableCell>
-                        {/* <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell> */}
+                        </TableCell>
+                        <TableCell align="left">{Type}</TableCell>
+                        <TableCell align="left">{Price}</TableCell>
+                        <TableCell align="left">
+                          <Label variant="ghost" color={(Status === 'Sold' && 'error') || 'success'}>
+                            {sentenceCase(Status)}
+                          </Label>
+                        </TableCell>
+
                         <TableCell align="right">
-                          <UserMoreMenu />
+                          <TicketMoreMenu />
                         </TableCell>
                       </TableRow>
                     );
@@ -224,7 +233,7 @@ export default function User() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={users.length}
+            count={tickets.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
